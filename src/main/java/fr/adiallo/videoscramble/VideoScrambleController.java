@@ -13,6 +13,7 @@ import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -72,6 +73,9 @@ public class VideoScrambleController {
     private ChoiceBox<String> criterionChoice;
 
     @FXML
+    private CheckBox embedKeyCheckBox;
+
+    @FXML
     private VBox selectionScreen;
 
     @FXML
@@ -114,7 +118,8 @@ public class VideoScrambleController {
         if (!validateAndSetKey())
             return;
         mode = "scramble";
-        titleLabel.setText("Mode: Chiffrement 🔒");
+        embedKey = readEmbedKeyFromUI();
+        titleLabel.setText("Mode: Chiffrement 🔒" + (embedKey ? "  +  Clé embarquée 🔑" : ""));
         showProcessingScreen();
         updateKeyLabel();
     }
@@ -124,7 +129,8 @@ public class VideoScrambleController {
         if (!validateAndSetKey())
             return;
         mode = "unscramble";
-        titleLabel.setText("Mode: Déchiffrement 🔓");
+        embedKey = readEmbedKeyFromUI();
+        titleLabel.setText("Mode: Déchiffrement 🔓" + (embedKey ? "  +  Extraction clé 🔑" : ""));
         showProcessingScreen();
         updateKeyLabel();
     }
@@ -133,9 +139,15 @@ public class VideoScrambleController {
     private void selectCrackMode() {
         mode = "crack";
         key = -1; // Indiquer le mode crack
+        embedKey = false; // Le cassage n'a pas de sens combiné à l'extraction
         titleLabel.setText("Mode: Cassage de clé 🔨");
         showProcessingScreen();
         keyLabel.setText("Clé : Inconnue (sera trouvée)");
+    }
+
+    /** Lit l'état de la checkbox "Embarquer la clé" (étape 3 du sujet). */
+    private boolean readEmbedKeyFromUI() {
+        return embedKeyCheckBox != null && embedKeyCheckBox.isSelected();
     }
 
     private boolean validateAndSetKey() {
