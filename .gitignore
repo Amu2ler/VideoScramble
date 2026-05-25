@@ -84,3 +84,6 @@ Desktop.ini
 
 # JavaFX specific
 *.fxgraph
+
+# Claude Code
+.claude/

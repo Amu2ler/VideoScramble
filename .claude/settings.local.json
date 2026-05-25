@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(mvn clean *)",
-      "Bash(mvn javafx:run -Djavafx.args=\"scramble IMG_6710.MOV scrambled.avi 12345\")"
-    ]
-  }
-}
