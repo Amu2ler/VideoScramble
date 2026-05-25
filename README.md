@@ -2,7 +2,7 @@
 
 Application JavaFX pour le chiffrement et le déchiffrement de vidéos par permutation de lignes.
 
-**Auteur** : Abdoulaye DIALLO
+**Auteurs** : Arthur MULLER & Abdoulaye DIALLO
 
 ## Description
 
