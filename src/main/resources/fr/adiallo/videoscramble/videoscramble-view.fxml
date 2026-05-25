@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.control.ProgressBar?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<StackPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="fr.adiallo.videoscramble.VideoScrambleController"
+            prefHeight="700.0" prefWidth="1400.0">
+
+    <!-- Écran de sélection du mode -->
+    <VBox fx:id="selectionScreen" spacing="20" alignment="CENTER" style="-fx-background-color: #2c3e50;">
+        <Label text="VideoScramble" 
+               style="-fx-text-fill: white; -fx-font-size: 36; -fx-font-weight: bold;"/>
+        <Label text="Choisissez un mode" 
+               style="-fx-text-fill: #ecf0f1; -fx-font-size: 18;"/>
+        
+        <HBox spacing="10" alignment="CENTER">
+            <Label text="Clé :" style="-fx-text-fill: #ecf0f1; -fx-font-size: 16;"/>
+            <TextField fx:id="keyInputField" promptText="Entrez une clé (ex: 12345)" text="12345"
+                       style="-fx-font-size: 14; -fx-pref-width: 200;"/>
+        </HBox>
+        
+        <HBox spacing="20" alignment="CENTER">
+            <Button text="🔒 Chiffrer" onAction="#selectScrambleMode"
+                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 18; -fx-padding: 20;"/>
+            
+            <Button text="🔓 Déchiffrer" onAction="#selectUnscrambleMode"
+                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 18; -fx-padding: 20;"/>
+            
+            <Button text="🔨 Casser la clé" onAction="#selectCrackMode"
+                    style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-size: 18; -fx-padding: 20;"/>
+        </HBox>
+    </VBox>
+
+    <!-- Écran de traitement -->
+    <BorderPane fx:id="processingScreen" visible="false">
+        <!-- En-tête -->
+        <top>
+            <VBox spacing="10" style="-fx-background-color: #2c3e50; -fx-padding: 20;">
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                     <Button text="⬅ Retour" onAction="#goBack"
+                            style="-fx-background-color: #95a5a6; -fx-text-fill: white;"/>
+                    <Label fx:id="titleLabel" text="Mode: Chiffrement" 
+                           style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;"/>
+                </HBox>
+                
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                    <Label fx:id="keyLabel" text="" 
+                           style="-fx-text-fill: #ecf0f1; -fx-font-size: 16; -fx-font-weight: bold;"/>
+                    <Label fx:id="fpsLabel" text="FPS: 0.0 | Frames: 0 | Résolution: 0x0" 
+                           style="-fx-text-fill: #ecf0f1; -fx-font-size: 14;"/>
+                </HBox>
+            </VBox>
+        </top>
+        
+        <!-- Zone centrale avec les deux vidéos -->
+        <center>
+            <HBox spacing="10" style="-fx-padding: 10;">
+                <!-- Vidéo d'entrée -->
+                <VBox spacing="5" HBox.hgrow="ALWAYS">
+                    <Label text="Vidéo d'entrée" 
+                           style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                    <ImageView fx:id="inputImageView" 
+                              fitWidth="680" 
+                              fitHeight="510" 
+                              preserveRatio="true"
+                              style="-fx-border-color: #34495e; -fx-border-width: 2;"/>
+                </VBox>
+                
+                <!-- Vidéo de sortie -->
+                <VBox spacing="5" HBox.hgrow="ALWAYS">
+                    <Label text="Vidéo de sortie" 
+                           style="-fx-font-size: 16; -fx-font-weight: bold;"/>
+                    <ImageView fx:id="outputImageView" 
+                              fitWidth="680" 
+                              fitHeight="510" 
+                              preserveRatio="true"
+                              style="-fx-border-color: #34495e; -fx-border-width: 2;"/>
+                </VBox>
+            </HBox>
+        </center>
+        
+        <!-- Bas avec les contrôles -->
+        <bottom>
+            <VBox spacing="10" style="-fx-background-color: #ecf0f1; -fx-padding: 15;">
+                <!-- Barre de progression -->
+                <ProgressBar fx:id="progressBar" 
+                            prefWidth="9999" 
+                            prefHeight="25"
+                            style="-fx-accent: #27ae60;"/>
+                
+                <!-- Label de statut -->
+                <Label fx:id="statusLabel" 
+                       text="Prêt" 
+                       style="-fx-font-size: 14; -fx-text-fill: #2c3e50;"/>
+                
+                <!-- Boutons de contrôle -->
+                <HBox spacing="10" alignment="CENTER">
+                    <Button fx:id="selectInputButton" 
+                           text="Sélectionner vidéo d'entrée" 
+                           onAction="#selectInputVideo"
+                           style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;">
+                        <font>
+                            <Font size="14.0"/>
+                        </font>
+                    </Button>
+                    
+                    <Button fx:id="selectOutputButton" 
+                           text="Sélectionner vidéo de sortie" 
+                           onAction="#selectOutputVideo"
+                           style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;">
+                        <font>
+                            <Font size="14.0"/>
+                        </font>
+                    </Button>
+                    
+                    <Button fx:id="startButton" 
+                           text="Démarrer le traitement" 
+                           onAction="#startProcessing"
+                           style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-padding: 10 30;">
+                        <font>
+                            <Font name="System Bold" size="14.0"/>
+                        </font>
+                    </Button>
+                </HBox>
+            </VBox>
+        </bottom>
+        
+    </BorderPane>
+
+</StackPane>
