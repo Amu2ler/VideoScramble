@@ -27,14 +27,35 @@ public interface SimilarityCriterion {
         if (frame.empty() || frame.rows() < 2) {
             return 0.0;
         }
-        
+
         double totalScore = 0.0;
         int numPairs = frame.rows() - 1;
-        
+
         for (int i = 0; i < numPairs; i++) {
             totalScore += computeSimilarity(frame, i, i + 1);
         }
-        
+
+        return totalScore;
+    }
+
+    /**
+     * Variante optimisée pour le cassage de clé : évalue le score sur l'image
+     * DÉCHIFFRÉE sans la matérialiser. Pour chaque paire (i, i+1) de l'image
+     * déchiffrée, on lit directement les lignes perm[i] et perm[i+1] de l'image
+     * chiffrée fournie. Évite une allocation Mat complète par clé testée.
+     */
+    default double evaluateImageWithPermutation(Mat scrambledFrame, int[] unscramblePerm) {
+        if (scrambledFrame.empty() || unscramblePerm == null || unscramblePerm.length < 2) {
+            return 0.0;
+        }
+
+        double totalScore = 0.0;
+        int numPairs = unscramblePerm.length - 1;
+
+        for (int i = 0; i < numPairs; i++) {
+            totalScore += computeSimilarity(scrambledFrame, unscramblePerm[i], unscramblePerm[i + 1]);
+        }
+
         return totalScore;
     }
 }

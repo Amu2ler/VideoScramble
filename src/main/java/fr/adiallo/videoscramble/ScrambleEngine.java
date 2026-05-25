@@ -51,7 +51,10 @@ public class ScrambleEngine {
      * de taille puissance de 2, du haut vers le bas.
      */
     public Mat scramble(Mat input) {
-        Mat output = input.clone();
+        // Allocation sans copie : toutes les lignes sont écrasées par scrambleBlock,
+        // donc cloner les pixels d'origine est un gaspillage (la version précédente
+        // faisait clone() puis réécrivait chaque ligne).
+        Mat output = new Mat(input.rows(), input.cols(), input.type());
         int height = input.rows();
         
         // Traitement par itérations sur des puissances de 2
@@ -72,7 +75,8 @@ public class ScrambleEngine {
     
     /** Déchiffre une image en inversant la permutation des lignes. */
     public Mat unscramble(Mat input) {
-        Mat output = input.clone();
+        // Idem scramble : toutes les lignes sont réécrites, on évite le clone().
+        Mat output = new Mat(input.rows(), input.cols(), input.type());
         int height = input.rows();
         
         // Traitement par itérations sur des puissances de 2
@@ -113,6 +117,29 @@ public class ScrambleEngine {
         }
     }
     
+    /**
+     * Table de permutation du déchiffrement pour une hauteur donnée.
+     * Renvoie un tableau perm[h] tel que la ligne d'indice i dans l'image
+     * déchiffrée correspond à la ligne d'indice perm[i] dans l'image chiffrée.
+     *
+     * Utile pour le cassage de clé : on évite de matérialiser une Mat complète
+     * pour chacune des 32768 clés testées, ce qui divise drastiquement les
+     * allocations mémoire (cf. KeyCracker).
+     */
+    public int[] getUnscramblePermutation(int height) {
+        int[] perm = new int[height];
+        int startLine = 0;
+        while (startLine < height) {
+            int remaining = height - startLine;
+            int size = largestPowerOf2(remaining);
+            for (int i = 0; i < size; i++) {
+                perm[startLine + i] = startLine + ((offset + (2 * step + 1) * i) % size);
+            }
+            startLine += size;
+        }
+        return perm;
+    }
+
     /** Plus grande puissance de 2 <= n. */
     private int largestPowerOf2(int n) {
         if (n <= 0) return 0;

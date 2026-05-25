@@ -13,6 +13,7 @@ import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ProgressBar;
@@ -56,6 +57,9 @@ public class VideoScrambleController {
     private Button startButton;
 
     @FXML
+    private Button reassembleButton;
+
+    @FXML
     private Button selectInputButton;
 
     @FXML
@@ -63,6 +67,9 @@ public class VideoScrambleController {
 
     @FXML
     private TextField keyInputField;
+
+    @FXML
+    private ChoiceBox<String> criterionChoice;
 
     @FXML
     private VBox selectionScreen;
@@ -79,6 +86,10 @@ public class VideoScrambleController {
     private int key = 12345;
     private boolean embedKey = false;
     private boolean isProcessing = false;
+    /** Clé retrouvée par le dernier crack, utilisée par "Réassembler". -1 si aucun. */
+    private int lastCrackedKey = -1;
+    /** Récap textuel du dernier crack (temps précalcul + brute force) pour réaffichage. */
+    private String lastCrackSummary = "";
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
@@ -151,12 +162,54 @@ public class VideoScrambleController {
     private void goBack() {
         processingScreen.setVisible(false);
         selectionScreen.setVisible(true);
-        // Réinitialiser certaines valeurs si nécessaire
+        // Réinitialise l'état du dernier crack pour ne pas proposer "Réassembler"
+        // sur une session sans rapport.
+        resetCrackState();
+    }
+
+    /** Cache le bouton Réassembler et restaure l'état initial (avant crack). */
+    private void resetCrackState() {
+        lastCrackedKey = -1;
+        lastCrackSummary = "";
+        if (reassembleButton != null) {
+            reassembleButton.setVisible(false);
+            reassembleButton.setManaged(false);
+        }
+        if (startButton != null) {
+            startButton.setVisible(true);
+            startButton.setManaged(true);
+        }
+    }
+
+    /**
+     * Action déclenchée par le bouton "🎬 Réassembler" affiché après un crack.
+     * Bascule le mode en "unscramble" avec la clé retrouvée et relance le
+     * pipeline standard — sans refaire la force brute.
+     */
+    @FXML
+    public void startReassemble() {
+        if (lastCrackedKey < 0) {
+            statusLabel.setText("Aucune clé à réutiliser. Lancez d'abord un cassage.");
+            return;
+        }
+        // On garde le récap du crack visible en début de phase de déchiffrement
+        // pour que l'utilisateur ait toujours sous les yeux le résultat obtenu.
+        mode = "unscramble";
+        key = lastCrackedKey;
+        // Le bouton Réassembler disparaît, on remet "Démarrer" prêt pour une autre run.
+        reassembleButton.setVisible(false);
+        reassembleButton.setManaged(false);
+        startButton.setVisible(true);
+        startButton.setManaged(true);
+        updateKeyLabel();
+        startProcessing();
     }
 
     private void showProcessingScreen() {
         selectionScreen.setVisible(false);
         processingScreen.setVisible(true);
+        // Toute nouvelle entrée sur l'écran traitement repart d'un état "pas de crack en attente"
+        resetCrackState();
     }
 
     @FXML
@@ -240,9 +293,11 @@ public class VideoScrambleController {
         double fps = capture.get(Videoio.CAP_PROP_FPS);
         int totalFrames = (int) capture.get(Videoio.CAP_PROP_FRAME_COUNT);
 
+        final double sourceFps = fps;
+        final int totalFramesFinal = totalFrames;
         Platform.runLater(() -> {
-            fpsLabel.setText(String.format("FPS: %.1f | Frames: %d | Résolution: %dx%d",
-                    fps, totalFrames, frameWidth, frameHeight));
+            fpsLabel.setText(String.format("FPS source : %.1f  ·  Frames : %d  ·  Résolution : %d×%d",
+                    sourceFps, totalFramesFinal, frameWidth, frameHeight));
         });
 
         // Supprimer le fichier de sortie s'il existe (nécessaire sur macOS/AVFoundation)
@@ -319,30 +374,85 @@ public class VideoScrambleController {
         if ("crack".equals(mode) || key < 0) {
             Mat firstFrame = findNonBlackFrame(capture);
             if (firstFrame != null && !firstFrame.empty()) {
-                Platform.runLater(() -> {
-                    statusLabel.setText("Cassage de la clé en cours...");
-                });
+                SimilarityCriterion criterion = buildCriterionFromUI();
+                final String criterionName = criterion.getClass().getSimpleName().replace("Criterion", "");
+                Platform.runLater(() ->
+                    statusLabel.setText("🔨 Pré-calcul de la matrice de similarité (" + criterionName + ")…"));
 
-                KeyCracker cracker = new KeyCracker(new PearsonCriterion());
+                // Suivi du temps : on distingue le pré-calcul de la phase brute-force
+                // pour pouvoir afficher un récap à l'utilisateur à la fin.
+                final long[] times = new long[3]; // 0=start, 1=fin_précalcul, 2=fin_total
+                times[0] = System.currentTimeMillis();
+
+                KeyCracker cracker = new KeyCracker(criterion);
                 cracker.setProgressCallback((current, total, bestKey, bestScore) -> {
+                    // Premier callback avec current>=1 → pré-calcul terminé,
+                    // la phase brute-force commence vraiment ici.
+                    if (current >= 1 && times[1] == 0) {
+                        times[1] = System.currentTimeMillis();
+                    }
                     Platform.runLater(() -> {
                         double progress = (double) current / total;
                         progressBar.setProgress(progress);
-                        statusLabel.setText(String.format(
-                                "Cassage : %d/%d (%.1f%%) - Meilleure clé: %d (score: %.2f)",
-                                current, total, progress * 100, bestKey, bestScore));
+                        if (current == 0) {
+                            // Pendant le pré-calcul, on n'a pas encore de meilleure clé
+                            statusLabel.setText("🔨 Pré-calcul de la matrice de similarité (" + criterionName + ")…");
+                        } else {
+                            long elapsedMs = System.currentTimeMillis() - times[0];
+                            statusLabel.setText(String.format(
+                                    "🔨 Cassage : %d / %d (%.1f%%)  ·  Meilleure clé : %d  ·  Score : %.3f  ·  ⏱ %s",
+                                    current, total, progress * 100, bestKey, bestScore, formatDuration(elapsedMs)));
+                        }
                     });
                 });
 
                 key = cracker.crackKey(firstFrame);
+                times[2] = System.currentTimeMillis();
                 engine = new ScrambleEngine(key);
 
-                Platform.runLater(() -> {
-                    updateKeyLabel();
-                    statusLabel.setText("Clé trouvée : " + key + " - Traitement en cours...");
-                });
+                final long precomputeMs = Math.max(0, times[1] - times[0]);
+                final long bruteForceMs = Math.max(0, times[2] - times[1]);
+                final long totalCrackMs = times[2] - times[0];
+                final int foundKey = key;
 
                 firstFrame.release();
+
+                // En mode "crack" pur, on s'arrête ici : l'utilisateur regarde
+                // les résultats puis lance le réassemblage via le bouton dédié.
+                if ("crack".equals(mode)) {
+                    lastCrackedKey = foundKey;
+                    lastCrackSummary = String.format(
+                            "✓ Clé trouvée : %d  ·  Pré-calcul %.2fs + Force brute %.2fs = Total %.2fs",
+                            foundKey,
+                            precomputeMs / 1000.0,
+                            bruteForceMs / 1000.0,
+                            totalCrackMs / 1000.0);
+
+                    // Libérer les ressources : le réassemblage rouvrira tout.
+                    writer.release();
+                    capture.release();
+
+                    Platform.runLater(() -> {
+                        updateKeyLabel();
+                        progressBar.setProgress(1.0);
+                        statusLabel.setText(lastCrackSummary +
+                                "  ·  Cliquez sur « 🎬 Réassembler » pour déchiffrer la vidéo");
+                        // Afficher le bouton de réassemblage, masquer le bouton de démarrage
+                        reassembleButton.setVisible(true);
+                        reassembleButton.setManaged(true);
+                        startButton.setVisible(false);
+                        startButton.setManaged(false);
+                    });
+                    return;
+                }
+
+                // Mode hors "crack" (ex : key < 0 par CLI) : on continue automatiquement.
+                Platform.runLater(() -> {
+                    updateKeyLabel();
+                    statusLabel.setText(String.format(
+                            "✓ Clé trouvée : %d  ·  Total %.2fs  ·  Déchiffrement en cours…",
+                            foundKey, totalCrackMs / 1000.0));
+                });
             }
 
             // Réinitialiser la capture
@@ -399,9 +509,13 @@ public class VideoScrambleController {
 
                 long elapsed = System.currentTimeMillis() - startTime;
                 double avgFps = currentFrame / (elapsed / 1000.0);
+                long etaMs = currentFrame < totalFrames
+                        ? (long) ((elapsed / (double) currentFrame) * (totalFrames - currentFrame))
+                        : 0;
 
                 statusLabel.setText(String.format(
-                        "Traitement : %d/%d frames (%.1f%%) - %.1f fps",
+                        "⏱ %s  (ETA %s)  ·  Frames %d / %d (%.1f%%)  ·  %.1f fps moy.",
+                        formatDuration(elapsed), formatDuration(etaMs),
                         currentFrame, totalFrames, progress * 100, avgFps));
             });
 
@@ -415,13 +529,45 @@ public class VideoScrambleController {
 
         long totalTime = System.currentTimeMillis() - startTime;
         final int totalFramesProcessed = frameCount;
+        final double avgFpsFinal = totalFramesProcessed / (totalTime / 1000.0);
+
+        // Taille du fichier de sortie effectivement écrit (peut être en .avi si embedKey)
+        File written = new File(actualOutputPath);
+        final long outputSize = written.exists() ? written.length() : 0;
+        final String outputName = written.getName();
 
         Platform.runLater(() -> {
             progressBar.setProgress(1.0);
             statusLabel.setText(String.format(
-                    "Terminé ! %d frames traitées en %.2f secondes",
-                    totalFramesProcessed, totalTime / 1000.0));
+                    "✅ Terminé  ·  %d frames en %s  ·  %.1f fps moy.  ·  Sortie : %s (%s)",
+                    totalFramesProcessed,
+                    formatDuration(totalTime),
+                    avgFpsFinal,
+                    outputName,
+                    formatSize(outputSize)));
         });
+    }
+
+    /** Formate une durée en ms vers "m:ss" (ou "m:ss.S" sous la seconde). */
+    private static String formatDuration(long millis) {
+        if (millis < 1000) {
+            return String.format("%.2fs", millis / 1000.0);
+        }
+        long s = millis / 1000;
+        long ms = millis % 1000;
+        if (s < 60) {
+            return String.format("%d.%ds", s, ms / 100);
+        }
+        return String.format("%d:%02d", s / 60, s % 60);
+    }
+
+    /** Formate une taille en octets vers une représentation lisible (Ko / Mo / Go). */
+    private static String formatSize(long bytes) {
+        if (bytes <= 0) return "—";
+        if (bytes < 1024) return bytes + " o";
+        if (bytes < 1024L * 1024) return String.format("%.1f Ko", bytes / 1024.0);
+        if (bytes < 1024L * 1024 * 1024) return String.format("%.1f Mo", bytes / (1024.0 * 1024));
+        return String.format("%.2f Go", bytes / (1024.0 * 1024 * 1024));
     }
 
     /** Saute les éventuelles frames noires du début (intro, fondu). */
@@ -445,6 +591,24 @@ public class VideoScrambleController {
 
         frame.release();
         return null;
+    }
+
+    /**
+     * Construit le critère de similarité choisi dans l'IHM.
+     * Par défaut (ou si la ChoiceBox n'est pas accessible depuis un thread non-UI),
+     * on retombe sur Pearson, plus robuste aux variations d'éclairage.
+     */
+    private SimilarityCriterion buildCriterionFromUI() {
+        String selected = null;
+        try {
+            selected = criterionChoice == null ? null : criterionChoice.getValue();
+        } catch (Exception ignored) {
+            // Lecture depuis un thread non-UI : on garde le défaut
+        }
+        if (selected != null && selected.toLowerCase().contains("euclid")) {
+            return new EuclideanCriterion();
+        }
+        return new PearsonCriterion();
     }
 
     /** Rafraîchit le label de clé dans l'IHM. */

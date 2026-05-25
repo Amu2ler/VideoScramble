@@ -87,3 +87,9 @@ Desktop.ini
 
 # Claude Code
 .claude/
+
+# Extraction texte du sujet (généré localement)
+sujet_extracted.txt
+
+# Archives de rendu
+*.zip

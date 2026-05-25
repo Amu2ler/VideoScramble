@@ -37,7 +37,7 @@ public class VideoScrambleApplication extends Application {
         FXMLLoader fxmlLoader = new FXMLLoader(
             VideoScrambleApplication.class.getResource("videoscramble-view.fxml")
         );
-        Scene scene = new Scene(fxmlLoader.load(), 1400, 700);
+        Scene scene = new Scene(fxmlLoader.load(), 1400, 850);
         
         // Passer les paramètres au contrôleur
         VideoScrambleController controller = fxmlLoader.getController();

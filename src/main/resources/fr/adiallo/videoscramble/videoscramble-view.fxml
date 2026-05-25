@@ -2,9 +2,12 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ChoiceBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ProgressBar?>
+<?import javafx.collections.FXCollections?>
+<?import java.lang.String?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
@@ -15,127 +18,308 @@
 <StackPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="fr.adiallo.videoscramble.VideoScrambleController"
-            prefHeight="700.0" prefWidth="1400.0">
+            prefHeight="850.0" prefWidth="1400.0"
+            style="-fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #f8fafc, #eef2ff);">
 
-    <!-- Écran de sélection du mode -->
-    <VBox fx:id="selectionScreen" spacing="20" alignment="CENTER" style="-fx-background-color: #2c3e50;">
-        <Label text="VideoScramble" 
-               style="-fx-text-fill: white; -fx-font-size: 36; -fx-font-weight: bold;"/>
-        <Label text="Choisissez un mode" 
-               style="-fx-text-fill: #ecf0f1; -fx-font-size: 18;"/>
-        
-        <HBox spacing="10" alignment="CENTER">
-            <Label text="Clé :" style="-fx-text-fill: #ecf0f1; -fx-font-size: 16;"/>
-            <TextField fx:id="keyInputField" promptText="Entrez une clé (ex: 12345)" text="12345"
-                       style="-fx-font-size: 14; -fx-pref-width: 200;"/>
-        </HBox>
-        
-        <HBox spacing="20" alignment="CENTER">
-            <Button text="🔒 Chiffrer" onAction="#selectScrambleMode"
-                    style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-size: 18; -fx-padding: 20;"/>
-            
-            <Button text="🔓 Déchiffrer" onAction="#selectUnscrambleMode"
-                    style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 18; -fx-padding: 20;"/>
-            
-            <Button text="🔨 Casser la clé" onAction="#selectCrackMode"
-                    style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-size: 18; -fx-padding: 20;"/>
-        </HBox>
+    <!-- ============================================================
+         ÉCRAN DE SÉLECTION DU MODE
+         ============================================================ -->
+    <VBox fx:id="selectionScreen" spacing="28" alignment="CENTER"
+          style="-fx-padding: 60;">
+
+        <!-- Bloc titre -->
+        <VBox spacing="6" alignment="CENTER">
+            <Label text="VideoScramble"
+                   style="-fx-text-fill: #0f172a; -fx-font-size: 56; -fx-font-weight: 900;"/>
+            <Label text="Chiffrement vidéo par permutation de lignes"
+                   style="-fx-text-fill: #64748b; -fx-font-size: 16; -fx-font-style: italic;"/>
+        </VBox>
+
+        <!-- Carte centrale paramètres + actions -->
+        <VBox spacing="22" alignment="CENTER" maxWidth="640"
+              style="-fx-background-color: white;
+                     -fx-background-radius: 20;
+                     -fx-border-color: #e2e8f0;
+                     -fx-border-radius: 20;
+                     -fx-border-width: 1;
+                     -fx-padding: 36 48;
+                     -fx-effect: dropshadow(gaussian, rgba(15,23,42,0.10), 24, 0, 0, 8);">
+
+            <Label text="CONFIGURATION"
+                   style="-fx-text-fill: #6366f1; -fx-font-size: 11; -fx-font-weight: bold;"/>
+
+            <!-- Clé -->
+            <VBox spacing="8" maxWidth="540">
+                <Label text="Clé de chiffrement (0 — 32767)"
+                       style="-fx-text-fill: #334155; -fx-font-size: 13; -fx-font-weight: bold;"/>
+                <TextField fx:id="keyInputField" promptText="ex: 12345" text="12345"
+                           style="-fx-font-size: 15;
+                                  -fx-pref-height: 42;
+                                  -fx-background-color: #f8fafc;
+                                  -fx-text-fill: #0f172a;
+                                  -fx-prompt-text-fill: #94a3b8;
+                                  -fx-background-radius: 10;
+                                  -fx-border-color: #e2e8f0;
+                                  -fx-border-radius: 10;
+                                  -fx-border-width: 1;
+                                  -fx-padding: 0 14;"/>
+            </VBox>
+
+            <!-- Critère cassage -->
+            <VBox spacing="8" maxWidth="540">
+                <Label text="Critère de cassage (mode 🔨)"
+                       style="-fx-text-fill: #334155; -fx-font-size: 13; -fx-font-weight: bold;"/>
+                <ChoiceBox fx:id="criterionChoice"
+                           style="-fx-pref-width: 9999;
+                                  -fx-pref-height: 42;
+                                  -fx-font-size: 14;
+                                  -fx-background-color: #f8fafc;
+                                  -fx-text-fill: #0f172a;
+                                  -fx-background-radius: 10;
+                                  -fx-border-color: #e2e8f0;
+                                  -fx-border-radius: 10;
+                                  -fx-border-width: 1;">
+                    <items>
+                        <FXCollections fx:factory="observableArrayList">
+                            <String fx:value="Corrélation de Pearson"/>
+                            <String fx:value="Distance euclidienne"/>
+                        </FXCollections>
+                    </items>
+                    <value>
+                        <String fx:value="Corrélation de Pearson"/>
+                    </value>
+                </ChoiceBox>
+            </VBox>
+
+            <!-- Boutons mode -->
+            <Label text="MODE"
+                   style="-fx-text-fill: #6366f1; -fx-font-size: 11; -fx-font-weight: bold; -fx-padding: 8 0 0 0;"/>
+            <HBox spacing="14" alignment="CENTER">
+                <Button text="🔒  Chiffrer" onAction="#selectScrambleMode"
+                        style="-fx-background-color: linear-gradient(to bottom, #f87171, #ef4444);
+                               -fx-text-fill: white;
+                               -fx-font-size: 16;
+                               -fx-font-weight: bold;
+                               -fx-padding: 16 26;
+                               -fx-background-radius: 12;
+                               -fx-cursor: hand;
+                               -fx-effect: dropshadow(gaussian, rgba(239,68,68,0.40), 14, 0, 0, 5);"/>
+
+                <Button text="🔓  Déchiffrer" onAction="#selectUnscrambleMode"
+                        style="-fx-background-color: linear-gradient(to bottom, #34d399, #10b981);
+                               -fx-text-fill: white;
+                               -fx-font-size: 16;
+                               -fx-font-weight: bold;
+                               -fx-padding: 16 26;
+                               -fx-background-radius: 12;
+                               -fx-cursor: hand;
+                               -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.40), 14, 0, 0, 5);"/>
+
+                <Button text="🔨  Casser la clé" onAction="#selectCrackMode"
+                        style="-fx-background-color: linear-gradient(to bottom, #fbbf24, #f59e0b);
+                               -fx-text-fill: white;
+                               -fx-font-size: 16;
+                               -fx-font-weight: bold;
+                               -fx-padding: 16 26;
+                               -fx-background-radius: 12;
+                               -fx-cursor: hand;
+                               -fx-effect: dropshadow(gaussian, rgba(245,158,11,0.40), 14, 0, 0, 5);"/>
+            </HBox>
+        </VBox>
+
+        <!-- Pied de page auteurs -->
+        <Label text="Arthur MULLER  &amp;  Abdoulaye DIALLO  ·  BUT Informatique S5 — Alternants"
+               style="-fx-text-fill: #94a3b8; -fx-font-size: 12; -fx-padding: 12 0 0 0;"/>
     </VBox>
 
-    <!-- Écran de traitement -->
+    <!-- ============================================================
+         ÉCRAN DE TRAITEMENT
+         ============================================================ -->
     <BorderPane fx:id="processingScreen" visible="false">
+
         <!-- En-tête -->
         <top>
-            <VBox spacing="10" style="-fx-background-color: #2c3e50; -fx-padding: 20;">
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                     <Button text="⬅ Retour" onAction="#goBack"
-                            style="-fx-background-color: #95a5a6; -fx-text-fill: white;"/>
-                    <Label fx:id="titleLabel" text="Mode: Chiffrement" 
-                           style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;"/>
+            <VBox spacing="12"
+                  style="-fx-background-color: white;
+                         -fx-padding: 20 32 20 32;
+                         -fx-border-color: transparent transparent #e2e8f0 transparent;
+                         -fx-border-width: 0 0 1 0;">
+
+                <HBox spacing="18" alignment="CENTER_LEFT">
+                    <Button text="←  Retour" onAction="#goBack"
+                            style="-fx-background-color: #f1f5f9;
+                                   -fx-text-fill: #475569;
+                                   -fx-font-size: 13;
+                                   -fx-font-weight: bold;
+                                   -fx-padding: 10 18;
+                                   -fx-background-radius: 8;
+                                   -fx-cursor: hand;"/>
+
+                    <Label fx:id="titleLabel" text="Mode: Chiffrement"
+                           style="-fx-text-fill: #0f172a;
+                                  -fx-font-size: 26;
+                                  -fx-font-weight: bold;"/>
                 </HBox>
-                
-                <HBox spacing="20" alignment="CENTER_LEFT">
-                    <Label fx:id="keyLabel" text="" 
-                           style="-fx-text-fill: #ecf0f1; -fx-font-size: 16; -fx-font-weight: bold;"/>
-                    <Label fx:id="fpsLabel" text="FPS: 0.0 | Frames: 0 | Résolution: 0x0" 
-                           style="-fx-text-fill: #ecf0f1; -fx-font-size: 14;"/>
+
+                <HBox spacing="14" alignment="CENTER_LEFT">
+                    <Label fx:id="keyLabel" text=""
+                           style="-fx-text-fill: #4f46e5;
+                                  -fx-font-size: 14;
+                                  -fx-font-weight: bold;
+                                  -fx-background-color: #eef2ff;
+                                  -fx-padding: 6 14;
+                                  -fx-background-radius: 999;
+                                  -fx-border-color: #c7d2fe;
+                                  -fx-border-width: 1;
+                                  -fx-border-radius: 999;"/>
+
+                    <Label fx:id="fpsLabel" text="FPS: 0.0  ·  Frames: 0  ·  Résolution: 0×0"
+                           style="-fx-text-fill: #64748b;
+                                  -fx-font-size: 13;"/>
                 </HBox>
             </VBox>
         </top>
-        
+
         <!-- Zone centrale avec les deux vidéos -->
         <center>
-            <HBox spacing="10" style="-fx-padding: 10;">
+            <HBox spacing="20"
+                  style="-fx-padding: 24;
+                         -fx-background-color: #f8fafc;">
+
                 <!-- Vidéo d'entrée -->
-                <VBox spacing="5" HBox.hgrow="ALWAYS">
-                    <Label text="Vidéo d'entrée" 
-                           style="-fx-font-size: 16; -fx-font-weight: bold;"/>
-                    <ImageView fx:id="inputImageView" 
-                              fitWidth="680" 
-                              fitHeight="510" 
+                <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="CENTER"
+                      style="-fx-background-color: white;
+                             -fx-background-radius: 16;
+                             -fx-border-color: #e2e8f0;
+                             -fx-border-radius: 16;
+                             -fx-border-width: 1;
+                             -fx-padding: 18;
+                             -fx-effect: dropshadow(gaussian, rgba(15,23,42,0.06), 16, 0, 0, 4);">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="●" style="-fx-text-fill: #3b82f6; -fx-font-size: 14;"/>
+                        <Label text="VIDÉO D'ENTRÉE"
+                               style="-fx-text-fill: #334155;
+                                      -fx-font-size: 12;
+                                      -fx-font-weight: bold;"/>
+                    </HBox>
+                    <ImageView fx:id="inputImageView"
+                              fitWidth="640"
+                              fitHeight="480"
                               preserveRatio="true"
-                              style="-fx-border-color: #34495e; -fx-border-width: 2;"/>
+                              style="-fx-background-color: #f1f5f9;
+                                     -fx-background-radius: 8;"/>
                 </VBox>
-                
+
                 <!-- Vidéo de sortie -->
-                <VBox spacing="5" HBox.hgrow="ALWAYS">
-                    <Label text="Vidéo de sortie" 
-                           style="-fx-font-size: 16; -fx-font-weight: bold;"/>
-                    <ImageView fx:id="outputImageView" 
-                              fitWidth="680" 
-                              fitHeight="510" 
+                <VBox spacing="10" HBox.hgrow="ALWAYS" alignment="CENTER"
+                      style="-fx-background-color: white;
+                             -fx-background-radius: 16;
+                             -fx-border-color: #e2e8f0;
+                             -fx-border-radius: 16;
+                             -fx-border-width: 1;
+                             -fx-padding: 18;
+                             -fx-effect: dropshadow(gaussian, rgba(15,23,42,0.06), 16, 0, 0, 4);">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <Label text="●" style="-fx-text-fill: #10b981; -fx-font-size: 14;"/>
+                        <Label text="VIDÉO DE SORTIE"
+                               style="-fx-text-fill: #334155;
+                                      -fx-font-size: 12;
+                                      -fx-font-weight: bold;"/>
+                    </HBox>
+                    <ImageView fx:id="outputImageView"
+                              fitWidth="640"
+                              fitHeight="480"
                               preserveRatio="true"
-                              style="-fx-border-color: #34495e; -fx-border-width: 2;"/>
+                              style="-fx-background-color: #f1f5f9;
+                                     -fx-background-radius: 8;"/>
                 </VBox>
             </HBox>
         </center>
-        
+
         <!-- Bas avec les contrôles -->
         <bottom>
-            <VBox spacing="10" style="-fx-background-color: #ecf0f1; -fx-padding: 15;">
+            <VBox spacing="14"
+                  style="-fx-background-color: white;
+                         -fx-padding: 20 32 20 32;
+                         -fx-border-color: #e2e8f0 transparent transparent transparent;
+                         -fx-border-width: 1 0 0 0;">
+
                 <!-- Barre de progression -->
-                <ProgressBar fx:id="progressBar" 
-                            prefWidth="9999" 
-                            prefHeight="25"
-                            style="-fx-accent: #27ae60;"/>
-                
+                <ProgressBar fx:id="progressBar"
+                            prefWidth="9999"
+                            prefHeight="10"
+                            style="-fx-accent: #3b82f6;
+                                   -fx-control-inner-background: #f1f5f9;
+                                   -fx-background-radius: 999;
+                                   -fx-background-insets: 0;
+                                   -fx-padding: 0;"/>
+
                 <!-- Label de statut -->
-                <Label fx:id="statusLabel" 
-                       text="Prêt" 
-                       style="-fx-font-size: 14; -fx-text-fill: #2c3e50;"/>
-                
+                <Label fx:id="statusLabel"
+                       text="Prêt — sélectionnez une vidéo d'entrée et un fichier de sortie"
+                       style="-fx-font-size: 13;
+                              -fx-text-fill: #475569;
+                              -fx-font-style: italic;"/>
+
                 <!-- Boutons de contrôle -->
-                <HBox spacing="10" alignment="CENTER">
-                    <Button fx:id="selectInputButton" 
-                           text="Sélectionner vidéo d'entrée" 
+                <HBox spacing="14" alignment="CENTER">
+                    <Button fx:id="selectInputButton"
+                           text="📁  Vidéo d'entrée"
                            onAction="#selectInputVideo"
-                           style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;">
-                        <font>
-                            <Font size="14.0"/>
-                        </font>
-                    </Button>
-                    
-                    <Button fx:id="selectOutputButton" 
-                           text="Sélectionner vidéo de sortie" 
+                           style="-fx-background-color: #eff6ff;
+                                  -fx-text-fill: #1d4ed8;
+                                  -fx-font-size: 14;
+                                  -fx-font-weight: bold;
+                                  -fx-padding: 12 22;
+                                  -fx-background-radius: 10;
+                                  -fx-border-color: #bfdbfe;
+                                  -fx-border-radius: 10;
+                                  -fx-border-width: 1;
+                                  -fx-cursor: hand;"/>
+
+                    <Button fx:id="selectOutputButton"
+                           text="💾  Vidéo de sortie"
                            onAction="#selectOutputVideo"
-                           style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-size: 14; -fx-padding: 10 20;">
-                        <font>
-                            <Font size="14.0"/>
-                        </font>
-                    </Button>
-                    
-                    <Button fx:id="startButton" 
-                           text="Démarrer le traitement" 
+                           style="-fx-background-color: #eff6ff;
+                                  -fx-text-fill: #1d4ed8;
+                                  -fx-font-size: 14;
+                                  -fx-font-weight: bold;
+                                  -fx-padding: 12 22;
+                                  -fx-background-radius: 10;
+                                  -fx-border-color: #bfdbfe;
+                                  -fx-border-radius: 10;
+                                  -fx-border-width: 1;
+                                  -fx-cursor: hand;"/>
+
+                    <Button fx:id="startButton"
+                           text="▶  Démarrer le traitement"
                            onAction="#startProcessing"
-                           style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-padding: 10 30;">
-                        <font>
-                            <Font name="System Bold" size="14.0"/>
-                        </font>
-                    </Button>
+                           style="-fx-background-color: linear-gradient(to bottom, #34d399, #10b981);
+                                  -fx-text-fill: white;
+                                  -fx-font-size: 14;
+                                  -fx-font-weight: bold;
+                                  -fx-padding: 12 32;
+                                  -fx-background-radius: 10;
+                                  -fx-cursor: hand;
+                                  -fx-effect: dropshadow(gaussian, rgba(16,185,129,0.40), 12, 0, 0, 4);"/>
+
+                    <Button fx:id="reassembleButton"
+                           text="🎬  Réassembler la vidéo avec cette clé"
+                           onAction="#startReassemble"
+                           visible="false"
+                           managed="false"
+                           style="-fx-background-color: linear-gradient(to bottom, #818cf8, #4f46e5);
+                                  -fx-text-fill: white;
+                                  -fx-font-size: 14;
+                                  -fx-font-weight: bold;
+                                  -fx-padding: 12 32;
+                                  -fx-background-radius: 10;
+                                  -fx-cursor: hand;
+                                  -fx-effect: dropshadow(gaussian, rgba(79,70,229,0.40), 12, 0, 0, 4);"/>
                 </HBox>
             </VBox>
         </bottom>
-        
+
     </BorderPane>
 
 </StackPane>
